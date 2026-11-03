@@ -8,7 +8,7 @@ extern "C" {
 #endif
 
 /**
- * @brief 初始化 TinyUSB RNDIS/ECM 虚拟网卡设备及 LwIP 网络接口
+ * @brief 初始化 TinyUSB CDC-NCM 虚拟网卡设备及 LwIP 网络接口
  * 
  * 配置网卡静态 IP 为 192.168.4.1，并开启 DHCP Server 为主机分配 IP
  */

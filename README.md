@@ -91,13 +91,13 @@ flowchart TD
 
 ### 途径 A：使用预编译固件一键刷入（推荐，无需编译环境）
 
-仓库内置已打包合并的完整量产固件：[`bin/esp_rndis_factory_4MB_0x0.bin`](bin/esp_rndis_factory_4MB_0x0.bin)（940 KB，单文件集成了引导程序、分区表与主固件）。
+仓库内置已打包合并的完整量产固件：[`bin/esp32_ncm_factory_4MB_0x0.bin`](bin/esp32_ncm_factory_4MB_0x0.bin)（940 KB，单文件集成了引导程序、分区表与主固件）。
 
 只需指定烧录起始地址为 **`0x0`** 即可一键刷入：
 
 ```bash
 # 使用 esptool 命令行烧录（将 COMx 替换为实际调试串口，如 COM7）
-esptool --chip esp32s3 -p COMx -b 921600 write-flash 0x0 bin/esp_rndis_factory_4MB_0x0.bin
+esptool --chip esp32s3 -p COMx -b 921600 write-flash 0x0 bin/esp32_ncm_factory_4MB_0x0.bin
 ```
 
 > **其他烧录方式**：
@@ -118,8 +118,8 @@ esptool --chip esp32s3 -p COMx -b 921600 write-flash 0x0 bin/esp_rndis_factory_4
 
 #### 2. 获取源码与编译
 ```bash
-git clone https://github.com/your-username/esp-rndis.git
-cd esp-rndis
+git clone https://github.com/CRThu/esp32-ncm.git
+cd esp32-ncm
 
 # 编译固件 (配置已通过 sdkconfig.defaults 固化)
 idf.py build
@@ -130,10 +130,10 @@ idf.py -p COM7 flash monitor
 
 #### 3. 亦可手动生成单文件 Factory 固件
 ```powershell
-esptool --chip esp32s3 merge-bin -o bin/esp_rndis_factory_4MB_0x0.bin `
+esptool --chip esp32s3 merge-bin -o bin/esp32_ncm_factory_4MB_0x0.bin `
   0x0 build/bootloader/bootloader.bin `
   0x8000 build/partition_table/partition-table.bin `
-  0x10000 build/esp_rndis_probe.bin
+  0x10000 build/esp32_ncm.bin
 ```
 
 ---

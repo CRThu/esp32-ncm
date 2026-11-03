@@ -98,8 +98,8 @@ esp_err_t usb_net_init(void)
     esp_netif_inherent_config_t base_cfg = {
         .flags = ESP_NETIF_DHCP_SERVER | ESP_NETIF_FLAG_AUTOUP,
         .ip_info = &ip_info,
-        .if_key = "USB_RNDIS",
-        .if_desc = "USB RNDIS Virtual Network Device",
+        .if_key = "USB_NCM",
+        .if_desc = "USB CDC-NCM Virtual Network Device",
         .route_prio = 10,
         .mac = {0x02, 0x02, 0x11, 0x22, 0x33, 0x02},
     };
@@ -148,7 +148,7 @@ esp_err_t usb_net_init(void)
 
     // 启动网络接口
     esp_netif_action_start(s_usb_netif, 0, 0, 0);
-    ESP_LOGI(TAG, "USB RNDIS netif running at 192.168.4.1 (DHCP Server active)");
+    ESP_LOGI(TAG, "USB CDC-NCM netif running at 192.168.4.1 (DHCP Server active)");
     return ESP_OK;
 }
 

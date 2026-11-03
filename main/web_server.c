@@ -106,7 +106,7 @@ static const char INDEX_HTML[] =
 "<body>\n"
 "<div class=\"container\">\n"
 "  <div class=\"top-header\">\n"
-"    <h1><span>⚡ ESP32-S3 随身虚拟网卡</span><span class=\"top-tag\">CDC-NCM / RNDIS</span></h1>\n"
+"    <h1><span>⚡ ESP32-S3 随身虚拟网卡</span><span class=\"top-tag\">CDC-NCM</span></h1>\n"
 "    <div style=\"font-size:12px; color:#64748b;\">宿主连接: <b style=\"color:#0f172a;\">192.168.4.2</b></div>\n"
 "  </div>\n"
 "  <div class=\"main-grid\">\n"
