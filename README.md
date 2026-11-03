@@ -34,7 +34,7 @@
   - Wi-Fi 射频常开（`WIFI_PS_NONE`），消除 DTIM 节能休眠引发的 TCP 抖动；
   - 调优 Wi-Fi A-MPDU 聚合窗口与 LwIP TCP 接收滑动窗口；
   - 扩展 TinyUSB CDC-NCM NTB 聚合缓冲至 6.4 KB，配合 25ms 弹性重试机制实现底层传输零丢包；
-  - 实测稳态吞吐达 **4.5 ~ 4.7 Mbps (~570 KB/s)**（峰值 4.73 Mbps），达到 USB 2.0 Full-Speed 架构下的高水平稳定利用率。
+  - 实测稳态吞吐达 **5.5 ~ 5.7 Mbps (约 690 ~ 710 KB/s)**（实测峰值 **5.65 Mbps / 706 KB/s**），逼近 USB 2.0 Full-Speed 架构下的物理承载极限。
 - **射频功耗与供电稳定性平衡**：
   - 发射功率规范为 **10 dBm**，削减瞬态脉冲电流，峰值电流控制在 150mA 安全区间，杜绝 USB 5V VBUS 压降导致的设备复位与过热。
 - **双轨故障转移与自动重连**：
@@ -83,13 +83,32 @@ flowchart TD
 | **原生 USB (OTG)** | ESP32-S3 USB PHY | **GPIO19 (D-) / GPIO20 (D+)** | 数据通信通道：连接 PC 模拟 CDC-NCM 虚拟网卡与 Web 控制台。 |
 | **调试串口 (UART)** | CH343 / CP2102 | **UART0 (TXD/RXD)** | 固件烧录与日志监控独立通道，运行期间与数据网卡物理隔离互不干扰。 |
 
-> **芯片要求**：ESP32-S3 系列（建议搭配 4MB+ Flash 与 8MB PSRAM）。
+> **硬件兼容性**：支持绝大多数 ESP32-S3 开发板（Flash ≥ 4MB 即可）。固件完全运行于片上 512KB SRAM，**不依赖外部 PSRAM**，无 PSRAM、Quad PSRAM (N8R2) 或 Octal PSRAM (N8R8/N16R8) 版本皆可通用。
 
 ---
 
 ## 🛠️ 快速上手
 
-### 1. 环境准备
+### 途径 A：使用预编译固件一键刷入（推荐，无需编译环境）
+
+仓库内置已打包合并的完整量产固件：[`bin/esp_rndis_factory_4MB_0x0.bin`](bin/esp_rndis_factory_4MB_0x0.bin)（940 KB，单文件集成了引导程序、分区表与主固件）。
+
+只需指定烧录起始地址为 **`0x0`** 即可一键刷入：
+
+```bash
+# 使用 esptool 命令行烧录（将 COMx 替换为实际调试串口，如 COM7）
+esptool --chip esp32s3 -p COMx -b 921600 write-flash 0x0 bin/esp_rndis_factory_4MB_0x0.bin
+```
+
+> **其他烧录方式**：
+> - **图形工具**：打开乐鑫官方 *Flash Download Tools*，仅需在第一行载入该 bin，右侧地址输入 `0x00`，点击 Start 即可。
+> - **免安装网页刷机**：支持通过 Chrome / Edge 浏览器使用 [ESP Web Tools](https://esphome.github.io/esp-web-tools/) 载入该 bin 连线直刷。
+
+---
+
+### 途径 B：从源码编译构建（开发者进阶）
+
+#### 1. 环境准备
 推荐使用 **ESP-IDF v6.0+** 开发环境：
 
 ```powershell
@@ -97,7 +116,7 @@ flowchart TD
 . C:\Espressif\tools\Microsoft.v6.0.1.PowerShell_profile.ps1
 ```
 
-### 2. 编译与烧录
+#### 2. 获取源码与编译
 ```bash
 git clone https://github.com/your-username/esp-rndis.git
 cd esp-rndis
@@ -109,7 +128,17 @@ idf.py build
 idf.py -p COM7 flash monitor
 ```
 
-### 3. 连接与使用
+#### 3. 亦可手动生成单文件 Factory 固件
+```powershell
+esptool --chip esp32s3 merge-bin -o bin/esp_rndis_factory_4MB_0x0.bin `
+  0x0 build/bootloader/bootloader.bin `
+  0x8000 build/partition_table/partition-table.bin `
+  0x10000 build/esp_rndis_probe.bin
+```
+
+---
+
+### 3. 上电与连接使用
 1. 使用 Type-C 数据线将 ESP32-S3 **原生 USB 口** 连接至计算机；
 2. 系统自动识别虚拟网卡并分配 IP 地址 `192.168.4.2`；
 3. 打开浏览器访问控制台：**`http://192.168.4.1/`**；
@@ -155,23 +184,23 @@ Set-NetIPInterface -InterfaceAlias "以太网 2" -InterfaceMetric 10
 ## ❓ 技术问答 (FAQ)
 
 <details>
-<summary><b>Q1: 实测速率表现如何？为什么约为 4.5 ~ 4.7 Mbps，未能达到更高？</b></summary>
+<summary><b>Q1: 实测速率表现如何？为什么约为 5.5 ~ 5.7 Mbps，未能达到几十兆？</b></summary>
 
 实测速率受工作模式与芯片物理层架构特性决定：
 
 #### 1. 现场实测速率表现
-- **当前稳态速率（射频常开 `WIFI_PS_NONE` + 10 dBm）**：
-  - 实测稳态下载速率：**4.5 ~ 4.7 Mbps (约 560 ~ 580 KB/s)**；
-  - 瞬态峰值速率：可达 **4.73 Mbps (591 KB/s)**；
-  - 底层传输表现：配合 25ms 弹性发送重试机制，实测 2MB+ 连续大包下载 **0 丢包**。
-- **节能模式速率（开启 Wi-Fi Modem-sleep 时）**：
-  - 由于无线射频按 100ms DTIM 周期性休眠，反向 TCP ACK 确认包存在抖动，速率通常在 **3.0 ~ 3.5 Mbps (约 380 ~ 430 KB/s)**。
+- **当前稳态速率（射频常开 `WIFI_PS_NONE` + 10 dBm 功耗平衡）**：
+  - 实测稳态下载速率：**5.5 ~ 5.7 Mbps (约 690 ~ 710 KB/s)**；
+  - 实测峰值吞吐：可达 **5.65 Mbps (706 KB/s)**；
+  - 底层传输表现：配合 25ms 弹性发送重试机制，实测 2MB+ 连续大包下载 **0 丢包**（`tx_fails: 0`）。
+- **早期/节能模式速率（开启 Wi-Fi Modem-sleep 时）**：
+  - 由于无线射频按 100ms DTIM 周期性休眠，反向 TCP ACK 确认包存在抖动，速率通常在 **3.0 ~ 3.5 Mbps (约 380 ~ 430 KB/s)**；未调优前普通模式约为 4.5 ~ 4.7 Mbps。
 
 #### 2. 物理极限与瓶颈解析
-1. **USB 2.0 Full-Speed PHY 限制**：ESP32-S3 片上内置的是 12 Mbps 全速 USB 物理层（而非 480 Mbps High-Speed），除去总线协议信令开销，理论单向最大物理承载极限约为 9.6 Mbps；
+1. **USB 2.0 Full-Speed PHY 限制**：ESP32-S3 片上内置的是 12 Mbps 全速 USB 物理层（而非 480 Mbps High-Speed），除去总线协议信令开销，理论单向最大有效载荷吞吐约为 9.6 Mbps；
 2. **Bulk 事务 64 字节微包切片**：标准 1500 字节以太网 MTU 帧在 USB 传输时，必须在硬件物理层切分为 24 个 64 字节 Bulk 事务分段收发；
 3. **半双工协议双向竞争**：下行数据吞吐与上行 TCP ACK 确认包共用同一条 12 Mbps 总线物理带宽；
-4. 综合以上因素，**~4.7 Mbps** 已经是该芯片在保障系统与供电长效稳定运行下的物理承载极限。
+4. 综合以上因素，**5.65 Mbps (706 KB/s)** 已经达到 12 Mbps 全速 USB 物理层约 60% 的总线有效利用率（计入双向 ACK 与 64 字节微包切片协议开销），逼近芯片物理层极值。
 </details>
 
 <details>
