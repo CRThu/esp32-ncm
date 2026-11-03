@@ -1,0 +1,29 @@
+# ESP-IDF 编译生成产物
+build/
+sdkconfig.old
+sdkconfig.ci
+
+# ESP-IDF 组件管理器依赖包及锁定文件
+managed_components/
+dependencies.lock
+
+# 编辑器与 IDE 配置及缓存
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+*.bak
+
+# Python 缓存文件
+__pycache__/
+*.py[cod]
+*.pyo
+
+# 日志与临时调试文件
+*.log
+
+
+controller_firmware/
